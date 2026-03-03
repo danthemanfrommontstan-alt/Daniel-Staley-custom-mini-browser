@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Daniel's Dynamic Mini-Browser</title>
+  <title>Daniel's Mini-Browser</title>
   <style>
     body { margin: 0; font-family: Arial; text-align: center; }
     input { width: 50%; padding: 8px; }
@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<h2>Daniel's Dynamic Mini-Browser</h2>
+<h2>Daniel's Mini-Browser</h2>
 
 <input type="text" id="urlInput" placeholder="Enter website (example.com)">
 <button onclick="loadSite(currentTab)">Go</button>
@@ -25,8 +25,8 @@
 <iframe id="browserFrame"></iframe>
 
 <script>
-let tabs = [];         // array of tab URLs
-let currentTab = -1;   // current tab index
+let tabs = [];         
+let currentTab = -1;   
 
 // Create a new mini-browser tab
 function newMiniTab(url) {
@@ -35,15 +35,13 @@ function newMiniTab(url) {
   tabs.push(url);
   currentTab = tabs.length - 1;
   updateTabsDisplay();
-  document.getElementById("browserFrame").src = url;
-  document.getElementById("urlInput").value = url;
+  loadInIframe(url);
 }
 
 // Switch to an existing tab
 function switchTab(index) {
   currentTab = index;
-  document.getElementById("browserFrame").src = tabs[index];
-  document.getElementById("urlInput").value = tabs[index];
+  loadInIframe(tabs[index]);
   updateTabsDisplay();
 }
 
@@ -53,7 +51,7 @@ function loadSite(tabIndex) {
   let url = document.getElementById("urlInput").value;
   if (!url.startsWith("http")) url = "https://" + url;
   tabs[tabIndex] = url;
-  document.getElementById("browserFrame").src = url;
+  loadInIframe(url);
   updateTabsDisplay();
 }
 
@@ -70,7 +68,33 @@ function updateTabsDisplay() {
   });
 }
 
-// Load first tab automatically
+// Load URL in iframe and override links inside
+function loadInIframe(url) {
+  const iframe = document.getElementById("browserFrame");
+  iframe.src = url;
+
+  // Wait until iframe loads to inject link interception
+  iframe.onload = () => {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      const links = doc.querySelectorAll('a');
+      links.forEach(link => {
+        link.onclick = function(e) {
+          e.preventDefault(); // Stop it from opening in Chrome
+          newMiniTab(link.href); // Open inside a new mini-browser tab
+        }
+      });
+    } catch (err) {
+      // Some websites block access to their content due to security policies (CORS)
+      console.log("Cannot intercept links for this site:", url);
+    }
+  };
+
+  // Update input box
+  document.getElementById("urlInput").value = url;
+}
+
+// Load the first tab
 window.onload = () => {
   newMiniTab("https://example.com");
 };

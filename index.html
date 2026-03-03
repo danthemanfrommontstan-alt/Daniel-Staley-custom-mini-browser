@@ -1,64 +1,79 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Daniel's Multi-Tab Browser</title>
+  <title>Daniel's Dynamic Mini-Browser</title>
   <style>
     body { margin: 0; font-family: Arial; text-align: center; }
-    input { width: 60%; padding: 8px; }
-    button { padding: 8px; margin: 2px; }
-    #tabs { margin-bottom: 10px; }
-    iframe { width: 100%; height: 600px; border: none; }
+    input { width: 50%; padding: 8px; }
+    button { padding: 6px 10px; margin: 2px; }
+    #tabs { margin: 10px; display: flex; flex-wrap: wrap; justify-content: center; }
+    .tab-btn { margin: 2px; }
     .active-tab { background-color: #4CAF50; color: white; }
+    iframe { width: 100%; height: 600px; border: none; }
   </style>
 </head>
 <body>
 
-<h2>Daniel's Multi-Tab Browser</h2>
+<h2>Daniel's Dynamic Mini-Browser</h2>
 
 <input type="text" id="urlInput" placeholder="Enter website (example.com)">
 <button onclick="loadSite(currentTab)">Go</button>
+<button onclick="newMiniTab(document.getElementById('urlInput').value)">Open in New Mini-Tab</button>
 
-<div id="tabs">
-  <button onclick="switchTab(0)" class="active-tab">Tab 1</button>
-  <button onclick="switchTab(1)">Tab 2</button>
-  <button onclick="switchTab(2)">Tab 3</button>
-</div>
+<div id="tabs"></div>
 
 <iframe id="browserFrame"></iframe>
 
 <script>
-  // Array to store URLs for each tab
-  let tabs = ["https://example.com", "https://example.com", "https://example.com"];
-  let currentTab = 0;
+let tabs = [];         // array of tab URLs
+let currentTab = -1;   // current tab index
 
-  function loadSite(tabIndex) {
-    let url = document.getElementById("urlInput").value;
-    if (!url.startsWith("http")) {
-      url = "https://" + url;
-    }
-    tabs[tabIndex] = url; // save the URL in the tab
-    document.getElementById("browserFrame").src = url;
-  }
+// Create a new mini-browser tab
+function newMiniTab(url) {
+  if (!url) return;
+  if (!url.startsWith("http")) url = "https://" + url;
+  tabs.push(url);
+  currentTab = tabs.length - 1;
+  updateTabsDisplay();
+  document.getElementById("browserFrame").src = url;
+  document.getElementById("urlInput").value = url;
+}
 
-  function switchTab(tabIndex) {
-    currentTab = tabIndex;
-    document.getElementById("browserFrame").src = tabs[tabIndex];
-    
-    // Update active tab button style
-    let buttons = document.querySelectorAll("#tabs button");
-    buttons.forEach((btn, i) => {
-      btn.classList.toggle("active-tab", i === tabIndex);
-    });
+// Switch to an existing tab
+function switchTab(index) {
+  currentTab = index;
+  document.getElementById("browserFrame").src = tabs[index];
+  document.getElementById("urlInput").value = tabs[index];
+  updateTabsDisplay();
+}
 
-    // Update input box with current tab's URL
-    document.getElementById("urlInput").value = tabs[tabIndex];
-  }
+// Load site in current tab
+function loadSite(tabIndex) {
+  if (tabIndex < 0) return;
+  let url = document.getElementById("urlInput").value;
+  if (!url.startsWith("http")) url = "https://" + url;
+  tabs[tabIndex] = url;
+  document.getElementById("browserFrame").src = url;
+  updateTabsDisplay();
+}
 
-  // Load first tab initially
-  window.onload = () => {
-    document.getElementById("browserFrame").src = tabs[0];
-    document.getElementById("urlInput").value = tabs[0];
-  }
+// Update the tab buttons
+function updateTabsDisplay() {
+  let container = document.getElementById("tabs");
+  container.innerHTML = "";
+  tabs.forEach((url, i) => {
+    let btn = document.createElement("button");
+    btn.textContent = "Tab " + (i+1);
+    btn.className = "tab-btn" + (i === currentTab ? " active-tab" : "");
+    btn.onclick = () => switchTab(i);
+    container.appendChild(btn);
+  });
+}
+
+// Load first tab automatically
+window.onload = () => {
+  newMiniTab("https://example.com");
+};
 </script>
 
 </body>

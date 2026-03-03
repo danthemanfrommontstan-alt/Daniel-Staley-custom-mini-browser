@@ -1,31 +1,100 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Browser</title>
+  <title>Mini Browser</title>
+  <style>
+    body { margin: 0; font-family: Arial; }
+    #tabs { display: flex; background: #ddd; padding: 5px; flex-wrap: wrap; }
+    .tab { padding: 5px 10px; margin-right: 2px; background: #eee; cursor: pointer; border-radius: 3px; }
+    .tab.active { background: #4CAF50; color: white; }
+    .tab button { margin-left: 5px; }
+    #addressBar { padding: 5px; width: 80%; }
+    button { padding: 5px 10px; }
+    iframe { width: 100%; height: 80vh; border: none; }
+    #quickLinks { margin: 5px; }
+  </style>
 </head>
 <body>
 
-  <input type="text" id="urlInput" placeholder="Enter website URL" style="width:70%;">
-  <button onclick="go()">Go</button>
+<div id="tabs"></div>
 
-  <br><br>
+<input type="text" id="addressBar" placeholder="Enter URL here">
+<button onclick="go()">Go</button>
+<button onclick="newTab(document.getElementById('addressBar').value)">New Tab</button>
 
-  <iframe id="browserFrame" style="width:100%; height:80vh;"></iframe>
+<div id="quickLinks">
+  <button onclick="newTab('https://example.com')">Example</button>
+  <button onclick="newTab('https://w3schools.com')">W3Schools</button>
+</div>
 
-  <script>
-    function go() {
-      let url = document.getElementById("urlInput").value;
+<iframe id="browserFrame"></iframe>
 
-      if (!url.startsWith("http")) {
-        url = "https://" + url;
-      }
+<script>
+const workerURL = "https://orange-frog-5257.danthemanfrommontstan.workers.dev/"; // Cloudflare Worker proxy
 
-const proxy = "https://orange-frog-5257.danthemanfrommontstan.workers.dev/";
-      const finalURL = proxy + "/?url=" + encodeURIComponent(url);
+let tabs = [];
+let currentTab = -1;
 
-      document.getElementById("browserFrame").src = finalURL;
-    }
-  </script>
+// Create a new tab
+function newTab(url) {
+  if (!url) return;
+  if (!url.startsWith("http")) url = "https://" + url;
+  tabs.push(url);
+  currentTab = tabs.length - 1;
+  updateTabs();
+  loadTab(url);
+}
+
+// Switch to an existing tab
+function switchTab(i) {
+  currentTab = i;
+  loadTab(tabs[i]);
+  updateTabs();
+}
+
+// Close a tab
+function closeTab(i) {
+  tabs.splice(i, 1);
+  if (currentTab >= tabs.length) currentTab = tabs.length - 1;
+  updateTabs();
+  if (currentTab >= 0) loadTab(tabs[currentTab]);
+  else document.getElementById('browserFrame').src = '';
+}
+
+// Load a tab in iframe
+function loadTab(url) {
+  const finalURL = workerURL + "/?url=" + encodeURIComponent(url);
+  document.getElementById('browserFrame').src = finalURL;
+  document.getElementById('addressBar').value = url;
+}
+
+// Go button updates current tab
+function go() {
+  if (currentTab < 0) return;
+  let url = document.getElementById('addressBar').value;
+  if (!url.startsWith("http")) url = "https://" + url;
+  tabs[currentTab] = url;
+  loadTab(url);
+  updateTabs();
+}
+
+// Update tab bar
+function updateTabs() {
+  const container = document.getElementById('tabs');
+  container.innerHTML = '';
+  tabs.forEach((url, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (i === currentTab ? ' active' : '');
+    tab.innerHTML = `<span onclick="switchTab(${i})">${url}</span> <button onclick="closeTab(${i})">x</button>`;
+    container.appendChild(tab);
+  });
+}
+
+// Start with one tab
+window.onload = () => {
+  newTab('https://example.com');
+};
+</script>
 
 </body>
 </html>
